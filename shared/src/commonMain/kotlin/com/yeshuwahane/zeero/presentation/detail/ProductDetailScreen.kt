@@ -311,19 +311,19 @@ class ProductDetailScreen(private val productId: String) : Screen {
 
                         val remaining = product.auctionEndTimeMillis - state.currentTimeMillis
                         val timerText = if (remaining <= 0L) {
-                            "Ended"
+                            "Auction Ended"
                         } else {
                             val secs = remaining / 1000
                             val hours = secs / 3600
                             val mins = (secs % 3600) / 60
                             val seconds = secs % 60
-                            "${hours.toString().padStart(2, '0')}:${
+                            "Ends in: ${hours.toString().padStart(2, '0')}:${
                                 mins.toString().padStart(2, '0')
                             }:${seconds.toString().padStart(2, '0')}"
                         }
 
                         Text(
-                            text = "Ends in: $timerText",
+                            text = timerText,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (remaining < 3600000) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground

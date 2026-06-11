@@ -5,7 +5,7 @@ ZeeroStock , Offline First Mobile App (Compose Multiplatform)
 ---
 
 ###  Project Resources & Repositories
-- **Mobile Client Repository**: [github.com/yeshuwahane/zeero](https://github.com/yeshuwahane/zeero)
+- **Mobile App Repository**: [github.com/yeshuwahane/zeero](https://github.com/yeshuwahane/zeero)
 - **Backend API Repository**: [github.com/yeshuwahane/zeeroapi](https://github.com/yeshuwahane/zeeroapi)
 - ** Android Build**: [Download ZeeroStock APK (Mock Link)](https://github.com/yeshuwahane/zeero/releases/download/v1.0.0/zeerostock-release.apk)
 

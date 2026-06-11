@@ -214,27 +214,38 @@ class SupplierDashboardScreen : Screen {
                     )
                 }
             }
-        } else if (products.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No stock listings found.\nClick the 'Add Stock' tab to upload your first product.",
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.outline,
-                    fontSize = 15.sp
-                )
-            }
         } else {
-            androidx.compose.foundation.lazy.LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(16.dp)
+            androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+                isRefreshing = state.isLoading,
+                onRefresh = { viewModel.onIntent(SupplierIntent.LoadData) },
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(products.size, key = { products[it].id }) { index ->
-                    val product = products[index]
-                    SupplierProductCard(product, viewModel)
+                if (products.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No stock listings found.\nClick the 'Add Stock' tab to upload your first product.",
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.outline,
+                            fontSize = 15.sp
+                        )
+                    }
+                } else {
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        items(products.size, key = { products[it].id }) { index ->
+                            val product = products[index]
+                            SupplierProductCard(product, viewModel)
+                        }
+                    }
                 }
             }
         }
