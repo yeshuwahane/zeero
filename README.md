@@ -1,6 +1,15 @@
 # ZeeroStock Mobile Terminal (KMP)
 
-ZeeroStock is an offline-first KMP B2B trading and auction client terminal targeted for iOS and Android. Built with Compose Multiplatform, Voyager, and SQLDelight using Clean Architecture and the MVI pattern.
+ZeeroStock , Offline First Mobile App (Compose Multiplatform)
+
+---
+
+###  Project Resources & Repositories
+- **Mobile Client Repository**: [github.com/yeshuwahane/zeero](https://github.com/yeshuwahane/zeero)
+- **Backend API Repository**: [github.com/yeshuwahane/zeeroapi](https://github.com/yeshuwahane/zeeroapi)
+- ** Android Build**: [Download ZeeroStock APK (Mock Link)](https://github.com/yeshuwahane/zeero/releases/download/v1.0.0/zeerostock-release.apk)
+
+---
 
 - **Backend Integration**: Communicates with Ktor API hosted on Railway at `https://zeeroapi-production.up.railway.app`
 - **Database Caching**: Persists inventory, bids, and user settings locally using SQLDelight SQLite.
@@ -29,7 +38,7 @@ graph TD
 
 ---
 
-## 🛠️ Tech Stack & Libraries
+##  Tech Stack & Libraries
 
 - **Compose Multiplatform**: Shared declarative UI for Android and iOS.
 - **Voyager**: Lifecycle-aware multiplatform navigation, `ScreenModel` state retention, and screen transitions.
@@ -40,7 +49,7 @@ graph TD
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```bash
 ├── androidApp/          # Android entry point and launcher setup
@@ -59,7 +68,7 @@ graph TD
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - macOS machine with **Xcode** (for iOS builds)
