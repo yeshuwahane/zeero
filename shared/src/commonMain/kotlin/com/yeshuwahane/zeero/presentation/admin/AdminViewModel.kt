@@ -32,34 +32,37 @@ class AdminViewModel(
         when (intent) {
             is AdminIntent.SelectTab -> _state.update { it.copy(selectedTabIndex = intent.index) }
             is AdminIntent.ApproveProduct -> {
+                _state.update { it.copy(processingProductId = intent.id) }
                 screenModelScope.launch {
                     val result = approveProductUseCase(intent.id)
                     if (result.isSuccess()) {
-                        _state.update { it.copy(showSuccessMessage = "Product approved successfully!") }
+                        _state.update { it.copy(showSuccessMessage = "Product approved successfully!", processingProductId = null) }
                     } else {
-                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to approve product.") }
+                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to approve product.", processingProductId = null) }
                     }
                     loadData()
                 }
             }
             is AdminIntent.RejectProduct -> {
+                _state.update { it.copy(processingProductId = intent.id) }
                 screenModelScope.launch {
                     val result = rejectProductUseCase(intent.id)
                     if (result.isSuccess()) {
-                        _state.update { it.copy(showSuccessMessage = "Product rejected and removed successfully!") }
+                        _state.update { it.copy(showSuccessMessage = "Product rejected and removed successfully!", processingProductId = null) }
                     } else {
-                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to reject product.") }
+                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to reject product.", processingProductId = null) }
                     }
                     loadData()
                 }
             }
             is AdminIntent.DeleteUser -> {
+                _state.update { it.copy(deletingUserId = intent.id) }
                 screenModelScope.launch {
                     val result = deleteUserUseCase(intent.id)
                     if (result.isSuccess()) {
-                        _state.update { it.copy(showSuccessMessage = "User deleted successfully!") }
+                        _state.update { it.copy(showSuccessMessage = "User deleted successfully!", deletingUserId = null) }
                     } else {
-                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to delete user.") }
+                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to delete user.", deletingUserId = null) }
                     }
                     loadData()
                 }
@@ -97,7 +100,6 @@ class AdminViewModel(
         }
         screenModelScope.launch {
             val adminUser = getSettingsUserUseCase()
-            // Force refresh when admin views panel to ensure fresh data
             val productsResult = getProductsUseCase(forceRefresh = true)
             val usersResult = getUsersUseCase()
 

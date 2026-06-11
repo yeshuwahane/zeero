@@ -9,7 +9,8 @@ data class DetailUiState(
     val bidAmount: String = "",
     val currentTimeMillis: Long = 0L,
     val validationError: String = "",
-    val showSuccess: Boolean = false
+    val showSuccess: Boolean = false,
+    val isPlacingBid: Boolean = false
 )
 
 sealed interface DetailIntent {

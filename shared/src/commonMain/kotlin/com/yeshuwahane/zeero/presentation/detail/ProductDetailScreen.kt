@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -461,13 +462,21 @@ class ProductDetailScreen(private val productId: String) : Screen {
 
                             Button(
                                 onClick = { viewModel.onIntent(DetailIntent.SubmitBid(product.id)) },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                enabled = !state.isPlacingBid,
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 )
                             ) {
-                                Text("Place Bid", fontWeight = FontWeight.Bold)
+                                if (state.isPlacingBid) {
+                                    CircularProgressIndicator(
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                } else {
+                                    Text("Place Bid", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }

@@ -201,9 +201,11 @@ class LoginScreen : Screen {
                             },
                             text = {
                                 Text(
-                                    text = role.name.replaceFirstChar { it.uppercase() },
+                                    text = role.name.lowercase().replaceFirstChar { it.uppercase() },
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         )

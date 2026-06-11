@@ -36,10 +36,6 @@ import com.yeshuwahane.zeero.theme.ZeeroTheme
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
-
-// admin appriov message
-// remove name from bid
-// suplier list
 @Composable
 @Preview
 fun App() {

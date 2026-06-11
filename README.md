@@ -1,24 +1,79 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# ZeeroStock Mobile Terminal (KMP)
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+ZeeroStock is an offline-first KMP B2B trading and auction client terminal targeted for iOS and Android. Built with Compose Multiplatform, Voyager, and SQLDelight using Clean Architecture and the MVI pattern.
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
+- **Backend Integration**: Communicates with Ktor API hosted on Railway at `https://zeeroapi-production.up.railway.app`
+- **Database Caching**: Persists inventory, bids, and user settings locally using SQLDelight SQLite.
 
-### Running the apps
-
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
-
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+> [!IMPORTANT]
+> **Railway Cold Starts**: The Ktor backend server is hosted on Railway's hobby tier and automatically sleeps after periods of inactivity. If the server is in an idle state, the initial request (such as logging in or loading products) may experience a delay of 20–30 seconds. Subsequent operations are near-instant.
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+##  Architecture & Flow
+
+The codebase is split into three Clean Architecture layers inside the `shared` module:
+
+```mermaid
+graph TD
+    UI[Presentation / Compose UI] --> VM[ViewModel / ScreenModel]
+    VM --> UC[Use Cases / Domain]
+    UC --> Repo[Repository Layer / Data]
+    Repo --> API[Ktor HTTP Client / Remote]
+    Repo --> DB[SQLDelight SQLite / Local Cache]
+```
+
+1. **Presentation Layer**: Handles Compose Multiplatform rendering. Uses the **MVI (Model-View-Intent)** design pattern where screens emit `Intents` to `ViewModels` (Voyager `ScreenModel`), and the UI reactively renders updates based on a single `UiState` StateFlow.
+2. **Domain Layer**: Holds business logic. Includes domain models (e.g., `Product`, `User`) and reusable `UseCases` (e.g., `PlaceBidUseCase`, `UpdateProductUseCase`).
+3. **Data Layer**: Coordinates data retrieval. Employs an **Offline-First caching strategy** using `ProductRepositoryImpl` and `UserRepositoryImpl`. API calls cache results locally in SQLite.
+
+---
+
+## 🛠️ Tech Stack & Libraries
+
+- **Compose Multiplatform**: Shared declarative UI for Android and iOS.
+- **Voyager**: Lifecycle-aware multiplatform navigation, `ScreenModel` state retention, and screen transitions.
+- **Ktor Client**: HTTP engine configured with JSON Content Negotiation and logging plugins.
+- **SQLDelight**: Type-safe SQLite database generator for multiplatform local caching.
+- **Koin**: Dependency injection framework defining bindings in `AppModule`, `CommonModule`, and `PlatformModule`.
+- **Napier**: Logging framework for cross-platform debugging.
+
+---
+
+## 📂 Project Structure
+
+```bash
+├── androidApp/          # Android entry point and launcher setup
+├── iosApp/              # iOS entry point (Xcode SwiftUI project wrapper)
+└── shared/              # Core Shared Kotlin Multiplatform module
+    └── src/
+        ├── commonMain/  # Shared core module code
+        │   └── kotlin/com/yeshuwahane/zeero/
+        │       ├── data/          # Repositories, DB access, and safe API wrappers
+        │       ├── di/            # Koin Modules definitions
+        │       ├── domain/        # Domain Models and UseCases
+        │       └── presentation/  # Screens, ViewModels (MVI), and Shared Components
+        ├── androidMain/ # Android platform integrations (SQLite Driver)
+        └── iosMain/     # iOS platform integrations (Darwin HTTP Engine, SQLite Driver)
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- macOS machine with **Xcode** (for iOS builds)
+- **Android Studio**
+- JDK 17+
+
+### Running Android
+```bash
+./gradlew :androidApp:installDebug
+```
+
+### Running iOS
+1. Open the `./iosApp` folder in Xcode.
+2. Select your simulator or physical target.
+3. Click **Product > Run** (`Cmd + R`).
+
+.

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
@@ -517,50 +519,77 @@ class AdminOverviewScreen : Screen {
                         }
                     }
                 } else {
+                    val isProcessing = state.processingProductId == product.id
+                    val isAnyProcessing = state.processingProductId != null
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
                             onClick = { viewModel.onIntent(AdminIntent.RejectProduct(product.id)) },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                            modifier = Modifier.weight(1f),
+                            enabled = !isAnyProcessing,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                disabledContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                            ),
+                            modifier = Modifier.weight(1f).height(38.dp),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Reject",
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Reject",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Reject",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Reject",
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
 
                         Button(
                             onClick = { viewModel.onIntent(AdminIntent.ApproveProduct(product.id)) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8F5E9)),
-                            modifier = Modifier.weight(1f),
+                            enabled = !isAnyProcessing,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE8F5E9),
+                                disabledContainerColor = Color(0xFFE8F5E9).copy(alpha = 0.5f)
+                            ),
+                            modifier = Modifier.weight(1f).height(38.dp),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Approve",
-                                tint = Color(0xFF2E7D32),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Approve",
-                                color = Color(0xFF2E7D32),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    color = Color(0xFF2E7D32),
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Approve",
+                                    tint = Color(0xFF2E7D32),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Approve",
+                                    color = Color(0xFF2E7D32),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -634,17 +663,23 @@ class AdminOverviewScreen : Screen {
                             text = user.name + if (isSelf) " (You)" else "",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = user.email,
                             fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "Password: ${user.password}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -671,35 +706,53 @@ class AdminOverviewScreen : Screen {
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = user.role.name,
+                            text = user.role.name.lowercase().replaceFirstChar { it.uppercase() },
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             color = textChipColor
                         )
                     }
 
                     if (isChiefAdmin && !isSelf) {
+                        val isDeleting = state.deletingUserId == user.id
                         IconButton(
                             onClick = { onEditClick(user) },
+                            enabled = state.deletingUserId == null,
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit User",
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = if (state.deletingUserId == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
-                        IconButton(
-                            onClick = { viewModel.onIntent(AdminIntent.DeleteUser(user.id)) },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete User",
-                                tint = Color(0xFFE53935),
-                                modifier = Modifier.size(16.dp)
-                            )
+                        if (isDeleting) {
+                            Box(
+                                modifier = Modifier.size(28.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color(0xFFE53935)
+                                )
+                            }
+                        } else {
+                            IconButton(
+                                onClick = { viewModel.onIntent(AdminIntent.DeleteUser(user.id)) },
+                                enabled = state.deletingUserId == null,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete User",
+                                    tint = if (state.deletingUserId == null) Color(0xFFE53935) else Color(0xFFE53935).copy(alpha = 0.5f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     } else if (currentAdmin?.id == "adm_02" && !isSelf) {
                         Icon(

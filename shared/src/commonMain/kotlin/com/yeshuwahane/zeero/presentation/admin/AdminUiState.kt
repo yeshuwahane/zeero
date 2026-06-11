@@ -11,7 +11,9 @@ data class AdminUiState(
     val usersResource: DataResource<List<User>> = DataResource.initial(),
     val currentAdminUser: User? = null,
     val showSuccessMessage: String? = null,
-    val showErrorMessage: String? = null
+    val showErrorMessage: String? = null,
+    val deletingUserId: String? = null,
+    val processingProductId: String? = null
 )
 
 sealed interface AdminIntent {

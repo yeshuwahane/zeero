@@ -68,6 +68,7 @@ import com.yeshuwahane.zeero.domain.usecase.LogoutUseCase
 import com.yeshuwahane.zeero.presentation.components.ImagePickerButton
 import com.yeshuwahane.zeero.presentation.components.ProductImage
 import com.yeshuwahane.zeero.presentation.components.byteArrayToImageBitmap
+import com.yeshuwahane.zeero.presentation.components.shimmerLoadingAnimation
 import com.yeshuwahane.zeero.presentation.login.LoginScreen
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -148,7 +149,7 @@ class SupplierDashboardScreen : Screen {
                 }
 
                 if (state.selectedTabIndex == 0) {
-                    SupplierListingsTab(state.supplierProducts, viewModel)
+                    SupplierListingsTab(state.supplierProducts, state, viewModel)
                 } else {
                     SupplierUploadFormTab(state, viewModel, categories)
                 }
@@ -194,9 +195,26 @@ class SupplierDashboardScreen : Screen {
     @Composable
     private fun SupplierListingsTab(
         products: List<Product>,
+        state: SupplierUiState,
         viewModel: SupplierViewModel
     ) {
-        if (products.isEmpty()) {
+        if (state.isLoading && products.isEmpty()) {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                items(5) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .shimmerLoadingAnimation()
+                    )
+                }
+            }
+        } else if (products.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
                 contentAlignment = Alignment.Center

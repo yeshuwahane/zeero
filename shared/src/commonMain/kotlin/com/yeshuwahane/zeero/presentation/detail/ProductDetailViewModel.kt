@@ -61,6 +61,7 @@ class ProductDetailViewModel(
                     } else if (amount <= minRequired) {
                         _state.update { it.copy(validationError = "Bid must be greater than $$minRequired") }
                     } else {
+                        _state.update { it.copy(isPlacingBid = true) }
                         screenModelScope.launch {
                             val placeBidResult = placeBidUseCase(intent.productId, amount, currentState.bidderName)
                             if (placeBidResult.isSuccess()) {
@@ -70,12 +71,13 @@ class ProductDetailViewModel(
                                         productResource = updatedProductResult,
                                         bidAmount = "",
                                         validationError = "",
-                                        showSuccess = true
+                                        showSuccess = true,
+                                        isPlacingBid = false
                                     )
                                 }
                             } else {
                                 val errorMsg = placeBidResult.error?.message ?: "Failed to place bid."
-                                _state.update { it.copy(validationError = errorMsg) }
+                                _state.update { it.copy(validationError = errorMsg, isPlacingBid = false) }
                             }
                         }
                     }

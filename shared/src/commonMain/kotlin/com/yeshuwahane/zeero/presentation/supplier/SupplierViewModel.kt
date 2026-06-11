@@ -102,6 +102,7 @@ class SupplierViewModel(
     }
 
     private fun loadData() {
+        _state.update { it.copy(isLoading = true) }
         screenModelScope.launch {
             val user = getSettingsUserUseCase()
             val productsResult = getProductsUseCase(forceRefresh = true)
@@ -114,9 +115,12 @@ class SupplierViewModel(
                 _state.update {
                     it.copy(
                         supplierProducts = supplierProducts,
-                        currentSupplier = user
+                        currentSupplier = user,
+                        isLoading = false
                     )
                 }
+            } else {
+                _state.update { it.copy(isLoading = false) }
             }
         }
     }
