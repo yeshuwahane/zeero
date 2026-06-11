@@ -48,7 +48,17 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yeshuwahane.zeero.presentation.components.ProductImage
 import com.yeshuwahane.zeero.getCurrentTimeMillis
+import com.yeshuwahane.zeero.getPlatform
 import kotlinx.coroutines.delay
+
+import com.yeshuwahane.zeero.presentation.components.shimmerLoadingAnimation
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
+
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 
 class ProductDetailScreen(private val productId: String) : Screen {
 
@@ -58,21 +68,132 @@ class ProductDetailScreen(private val productId: String) : Screen {
         val viewModel = getScreenModel<ProductDetailViewModel>()
         val state by viewModel.state.collectAsState()
 
+        if (state.showSuccess) {
+            val isAuction = state.productResource.data?.isAuction ?: false
+            val message = if (isAuction) "Bid placed successfully!" else "Purchase simulated successfully!"
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { viewModel.onIntent(DetailIntent.DismissDialog) },
+                title = { Text("Success") },
+                text = { Text(message) },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { viewModel.onIntent(DetailIntent.DismissDialog) }
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
+        if (state.validationError.isNotEmpty()) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { viewModel.onIntent(DetailIntent.DismissDialog) },
+                title = { Text("Error") },
+                text = { Text(state.validationError) },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { viewModel.onIntent(DetailIntent.DismissDialog) }
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
         LaunchedEffect(productId) {
             viewModel.onIntent(DetailIntent.LoadProduct(productId))
         }
 
-        val isAuction = state.product?.isAuction ?: false
+        val productResource = state.productResource
+        val isAuction = productResource.data?.isAuction ?: false
         if (isAuction) {
             LaunchedEffect(Unit) {
-                while (true) {
-                    viewModel.onIntent(DetailIntent.TickTimer(getCurrentTimeMillis()))
-                    delay(1000)
+                if (!getPlatform().name.contains("iOS", ignoreCase = true)) {
+                    while (true) {
+                        viewModel.onIntent(DetailIntent.TickTimer(getCurrentTimeMillis()))
+                        delay(1000)
+                    }
                 }
             }
         }
 
-        val product = state.product
+        if (productResource.isLoading()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Spacer(modifier = Modifier.height(56.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .shimmerLoadingAnimation()
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .shimmerLoadingAnimation()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(200.dp)
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .shimmerLoadingAnimation()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(20.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .shimmerLoadingAnimation()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .shimmerLoadingAnimation()
+                    )
+                }
+            }
+            return
+        }
+
+        if (productResource.isError()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = productResource.error?.message ?: "An error occurred",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            return
+        }
+
+        val product = productResource.data
         if (product == null) {
             Box(
                 modifier = Modifier
@@ -81,8 +202,8 @@ class ProductDetailScreen(private val productId: String) : Screen {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Loading Product...",
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "Product not found",
+                    color = MaterialTheme.colorScheme.outline,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -120,14 +241,48 @@ class ProductDetailScreen(private val productId: String) : Screen {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.Start
             ) {
-                ProductImage(
-                    category = product.imageUrl,
-                    title = product.title,
+                val images = product.imageUrl.split(",")
+                val imagePagerState = rememberPagerState(pageCount = { images.size })
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(280.dp)
                         .clip(RoundedCornerShape(20.dp))
-                )
+                ) {
+                    HorizontalPager(
+                        state = imagePagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        ProductImage(
+                            category = images[page],
+                            title = product.title,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    if (images.size > 1) {
+                        Row(
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            repeat(images.size) { index ->
+                                val isSelected = imagePagerState.currentPage == index
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isSelected) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                        )
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -317,38 +472,7 @@ class ProductDetailScreen(private val productId: String) : Screen {
                                 modifier = Modifier.fillMaxWidth()
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            AnimatedVisibility(visible = state.validationError.isNotEmpty()) {
-                                Text(
-                                    text = state.validationError,
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-
-                            AnimatedVisibility(visible = state.showSuccess) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Success",
-                                        tint = Color(0xFF4CAF50),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Bid placed successfully!",
-                                        color = Color(0xFF4CAF50),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             Button(
                                 onClick = { viewModel.onIntent(DetailIntent.SubmitBid(product.id)) },
@@ -379,30 +503,6 @@ class ProductDetailScreen(private val productId: String) : Screen {
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
-                    }
-
-                    AnimatedVisibility(visible = state.showSuccess) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 24.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Success",
-                                tint = Color(0xFF4CAF50),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Purchase simulated successfully!",
-                                color = Color(0xFF4CAF50),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
                     }
                 }
             }

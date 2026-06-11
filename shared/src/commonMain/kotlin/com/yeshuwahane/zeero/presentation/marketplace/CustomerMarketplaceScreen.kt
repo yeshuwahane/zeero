@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -50,6 +51,11 @@ import com.yeshuwahane.zeero.domain.model.Product
 import com.yeshuwahane.zeero.presentation.components.ProductImage
 import com.yeshuwahane.zeero.presentation.login.LoginScreen
 import com.yeshuwahane.zeero.presentation.detail.ProductDetailScreen
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+import com.yeshuwahane.zeero.domain.usecase.LogoutUseCase
+import com.yeshuwahane.zeero.presentation.components.shimmerLoadingAnimation
 
 class CustomerMarketplaceScreen : Screen {
 
@@ -59,10 +65,14 @@ class CustomerMarketplaceScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<MarketplaceViewModel>()
         val state by viewModel.state.collectAsState()
+        val logoutUseCase = koinInject<LogoutUseCase>()
+        val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
             viewModel.onIntent(MarketplaceIntent.LoadProducts)
         }
+
+        val productsResource = state.productsResource
 
         Scaffold(
             topBar = {
@@ -82,7 +92,12 @@ class CustomerMarketplaceScreen : Screen {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { navigator.replaceAll(LoginScreen()) }) {
+                        IconButton(onClick = {
+                            scope.launch {
+                                logoutUseCase()
+                                navigator.replaceAll(LoginScreen())
+                            }
+                        }) {
                             Icon(Icons.Default.ExitToApp, contentDescription = "Log Out / Switch Account")
                         }
                     },
@@ -94,7 +109,30 @@ class CustomerMarketplaceScreen : Screen {
                 )
             }
         ) { paddingValues ->
-            if (state.products.isEmpty()) {
+            val isRefreshing = productsResource.isLoading()
+
+            if (productsResource.isLoading() && productsResource.data.isNullOrEmpty()) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(paddingValues)
+                ) {
+                    items(6) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .shimmerLoadingAnimation()
+                        )
+                    }
+                }
+            } else if (productsResource.isError() && productsResource.data.isNullOrEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -102,63 +140,85 @@ class CustomerMarketplaceScreen : Screen {
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "No Products",
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No Approved Products Available",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = "Check back later or register as a supplier to add stock.",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        )
-                    }
+                    Text(
+                        text = productsResource.error?.message ?: "An error occurred",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             } else {
-                Column(
+                val products = productsResource.data ?: emptyList()
+                androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = { viewModel.onIntent(MarketplaceIntent.LoadProducts) },
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                         .padding(paddingValues)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "${state.products.size} Items Available",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    if (products.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.Home,
+                                    contentDescription = "No Products",
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "No Approved Products Available",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Text(
+                                    text = "Check back later or register as a supplier to add stock.",
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 24.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${products.size} Items Available",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
 
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(state.products, key = { it.id }) { product ->
-                            ProductCard(
-                                product = product,
-                                onClick = { navigator.push(ProductDetailScreen(product.id)) }
-                            )
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                contentPadding = PaddingValues(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(products, key = { it.id }) { product ->
+                                    val firstImage = product.imageUrl.split(",").firstOrNull() ?: product.imageUrl
+                                    ProductCard(
+                                        product = product.copy(imageUrl = firstImage),
+                                        onClick = { navigator.push(ProductDetailScreen(product.id)) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }

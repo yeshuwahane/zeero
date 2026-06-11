@@ -1,10 +1,11 @@
 package com.yeshuwahane.zeero.domain.usecase
 
+import com.yeshuwahane.zeero.data.utils.DataResource
 import com.yeshuwahane.zeero.domain.model.Product
 import com.yeshuwahane.zeero.domain.repository.ProductRepository
 
 class AddProductUseCase(private val productRepository: ProductRepository) {
-    operator fun invoke(
+    suspend operator fun invoke(
         title: String,
         description: String,
         price: Double,
@@ -12,7 +13,7 @@ class AddProductUseCase(private val productRepository: ProductRepository) {
         supplierId: String,
         isAuction: Boolean,
         durationHours: Int
-    ): Product {
+    ): DataResource<Product> {
         return productRepository.addProduct(title, description, price, category, supplierId, isAuction, durationHours)
     }
 }

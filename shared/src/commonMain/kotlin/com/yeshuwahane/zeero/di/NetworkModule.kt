@@ -13,9 +13,15 @@ import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 
+import io.ktor.client.plugins.defaultRequest
+import com.yeshuwahane.zeero.getPlatform
+
 val networkModule = module {
     single {
         HttpClient {
+            defaultRequest {
+                url("https://zeeroapi-production.up.railway.app")
+            }
             install(ContentNegotiation) {
                 json(Json {
                     explicitNulls = false

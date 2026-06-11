@@ -17,6 +17,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
@@ -68,7 +72,26 @@ class LoginScreen : Screen {
         val effect by viewModel.effect.collectAsState()
 
         var isSignUpMode by remember { mutableStateOf(false) }
-        var mockNameInput by remember { mutableStateOf("") }
+
+        val pagerState = rememberPagerState(
+            initialPage = state.selectedRole.ordinal,
+            pageCount = { UserRole.values().size }
+        )
+        val scope = rememberCoroutineScope()
+
+        LaunchedEffect(pagerState.currentPage) {
+            val role = UserRole.values()[pagerState.currentPage]
+            if (state.selectedRole != role) {
+                viewModel.onIntent(LoginIntent.SelectRole(role))
+                isSignUpMode = false
+            }
+        }
+
+        LaunchedEffect(state.selectedRole) {
+            if (pagerState.currentPage != state.selectedRole.ordinal) {
+                pagerState.animateScrollToPage(state.selectedRole.ordinal)
+            }
+        }
 
         LaunchedEffect(effect) {
             effect?.let {
@@ -134,8 +157,9 @@ class LoginScreen : Screen {
                         Tab(
                             selected = state.selectedRole == role,
                             onClick = {
-                                viewModel.onIntent(LoginIntent.SelectRole(role))
-                                isSignUpMode = false
+                                scope.launch {
+                                    pagerState.animateScrollToPage(role.ordinal)
+                                }
                             },
                             text = {
                                 Text(
@@ -150,213 +174,240 @@ class LoginScreen : Screen {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { page ->
+                    val pageRole = UserRole.values()[page]
                     Column(
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = if (isSignUpMode) "Supplier/Client Signup" else "${state.selectedRole.name} Login",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = if (isSignUpMode) "Supplier/Client Signup" else "${pageRole.name} Login",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
 
-                        AnimatedVisibility(visible = isSignUpMode) {
-                            Column {
+                                AnimatedVisibility(visible = isSignUpMode) {
+                                    Column {
+                                        OutlinedTextField(
+                                            value = state.name,
+                                            onValueChange = { viewModel.onIntent(LoginIntent.UpdateName(it)) },
+                                            label = { Text("Display / Company Name") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.Person,
+                                                    contentDescription = "Name"
+                                                )
+                                            },
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                    }
+                                }
+
                                 OutlinedTextField(
-                                    value = mockNameInput,
-                                    onValueChange = { mockNameInput = it },
-                                    label = { Text("Display / Company Name") },
+                                    value = state.email,
+                                    onValueChange = { viewModel.onIntent(LoginIntent.UpdateEmail(it)) },
+                                    label = { Text("Email Address") },
                                     leadingIcon = {
                                         Icon(
-                                            Icons.Default.Person,
-                                            contentDescription = "Name"
+                                            Icons.Default.Email,
+                                            contentDescription = "Email"
                                         )
                                     },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 )
+
                                 Spacer(modifier = Modifier.height(12.dp))
+
+                                OutlinedTextField(
+                                    value = state.password,
+                                    onValueChange = { viewModel.onIntent(LoginIntent.UpdatePassword(it)) },
+                                    label = { Text("Password") },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Lock,
+                                            contentDescription = "Password"
+                                        )
+                                    },
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                AnimatedVisibility(visible = state.errorMessage.isNotEmpty()) {
+                                    Text(
+                                        text = state.errorMessage,
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (isSignUpMode) {
+                                            viewModel.onIntent(LoginIntent.SubmitRegister)
+                                        } else {
+                                            viewModel.onIntent(LoginIntent.SubmitLogin)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = when (pageRole) {
+                                            UserRole.CUSTOMER -> MaterialTheme.colorScheme.primary
+                                            UserRole.SUPPLIER -> MaterialTheme.colorScheme.secondary
+                                            UserRole.ADMIN -> MaterialTheme.colorScheme.tertiary
+                                        }
+                                    ),
+                                    enabled = !state.isLoading
+                                ) {
+                                    if (state.isLoading) {
+                                        CircularProgressIndicator(
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = if (isSignUpMode) "Register & Authenticate" else "Secure Login",
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                if (pageRole != UserRole.ADMIN) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = if (isSignUpMode) "Already have an account? " else "Need a new account? ",
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = if (isSignUpMode) "Log In" else "Sign Up",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.clickable {
+                                                isSignUpMode = !isSignUpMode
+                                            }
+                                        )
+                                    }
+                                }
                             }
                         }
 
-                        OutlinedTextField(
-                            value = state.email,
-                            onValueChange = { viewModel.onIntent(LoginIntent.UpdateEmail(it)) },
-                            label = { Text("Email Address") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Email,
-                                    contentDescription = "Email"
-                                )
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            singleLine = true,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Text(
+                            text = "Auto-Fill Simulator Accounts",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.outline
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = state.password,
-                            onValueChange = { viewModel.onIntent(LoginIntent.UpdatePassword(it)) },
-                            label = { Text("Password") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Lock,
-                                    contentDescription = "Password"
-                                )
-                            },
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            singleLine = true,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        AnimatedVisibility(visible = state.errorMessage.isNotEmpty()) {
-                            Text(
-                                text = state.errorMessage,
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { viewModel.onIntent(LoginIntent.SubmitLogin) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = when (state.selectedRole) {
-                                    UserRole.CUSTOMER -> MaterialTheme.colorScheme.primary
-                                    UserRole.SUPPLIER -> MaterialTheme.colorScheme.secondary
-                                    UserRole.ADMIN -> MaterialTheme.colorScheme.tertiary
-                                }
-                            ),
-                            enabled = !state.isLoading
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            if (state.isLoading) {
-                                CircularProgressIndicator(
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            } else {
-                                Text(
-                                    text = if (isSignUpMode) "Register & Authenticate" else "Secure Login",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            when (pageRole) {
+                                UserRole.CUSTOMER -> {
+                                    AutoFillButton(
+                                        label = "Alice Smith (Customer)",
+                                        email = "alice@customer.com",
+                                        psw = "alice123",
+                                        onClick = {
+                                            viewModel.onIntent(LoginIntent.UpdateEmail("alice@customer.com"))
+                                            viewModel.onIntent(LoginIntent.UpdatePassword("alice123"))
+                                        }
+                                    )
+                                    AutoFillButton(
+                                        label = "Bob Jones (Customer)",
+                                        email = "bob@customer.com",
+                                        psw = "bob123",
+                                        onClick = {
+                                            viewModel.onIntent(LoginIntent.UpdateEmail("bob@customer.com"))
+                                            viewModel.onIntent(LoginIntent.UpdatePassword("bob123"))
+                                        }
+                                    )
+                                }
+                                UserRole.SUPPLIER -> {
+                                    AutoFillButton(
+                                        label = "Global Tech (Supplier)",
+                                        email = "info@globaltech.com",
+                                        psw = "global123",
+                                        onClick = {
+                                            viewModel.onIntent(LoginIntent.UpdateEmail("info@globaltech.com"))
+                                            viewModel.onIntent(LoginIntent.UpdatePassword("global123"))
+                                        }
+                                    )
+                                    AutoFillButton(
+                                        label = "Apex Electronics (Supplier)",
+                                        email = "sales@apexelectronics.com",
+                                        psw = "apex123",
+                                        onClick = {
+                                            viewModel.onIntent(LoginIntent.UpdateEmail("sales@apexelectronics.com"))
+                                            viewModel.onIntent(LoginIntent.UpdatePassword("apex123"))
+                                        }
+                                    )
+                                }
+                                UserRole.ADMIN -> {
+                                    AutoFillButton(
+                                        label = "Chief Admin (Admin)",
+                                        email = "admin@zeerostock.com",
+                                        psw = "admin123",
+                                        onClick = {
+                                            viewModel.onIntent(LoginIntent.UpdateEmail("admin@zeerostock.com"))
+                                            viewModel.onIntent(LoginIntent.UpdatePassword("admin123"))
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    AutoFillButton(
+                                        label = "Operations Manager (Admin)",
+                                        email = "manager@zeerostock.com",
+                                        psw = "manager123",
+                                        onClick = {
+                                            viewModel.onIntent(LoginIntent.UpdateEmail("manager@zeerostock.com"))
+                                            viewModel.onIntent(LoginIntent.UpdatePassword("manager123"))
+                                        }
+                                    )
+                                }
                             }
-                        }
-
-                        if (state.selectedRole != UserRole.ADMIN) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = if (isSignUpMode) "Already have an account? " else "Need a new account? ",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = if (isSignUpMode) "Log In" else "Sign Up",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.clickable {
-                                        isSignUpMode = !isSignUpMode
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = "Auto-Fill Simulator Accounts",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    when (state.selectedRole) {
-                        UserRole.CUSTOMER -> {
-                            AutoFillButton(
-                                label = "Alice Smith (Customer)",
-                                email = "alice@customer.com",
-                                psw = "alice123",
-                                onClick = {
-                                    viewModel.onIntent(LoginIntent.UpdateEmail("alice@customer.com"))
-                                    viewModel.onIntent(LoginIntent.UpdatePassword("alice123"))
-                                }
-                            )
-                            AutoFillButton(
-                                label = "Bob Jones (Customer)",
-                                email = "bob@customer.com",
-                                psw = "bob123",
-                                onClick = {
-                                    viewModel.onIntent(LoginIntent.UpdateEmail("bob@customer.com"))
-                                    viewModel.onIntent(LoginIntent.UpdatePassword("bob123"))
-                                }
-                            )
-                        }
-                        UserRole.SUPPLIER -> {
-                            AutoFillButton(
-                                label = "Global Tech (Supplier)",
-                                email = "info@globaltech.com",
-                                psw = "global123",
-                                onClick = {
-                                    viewModel.onIntent(LoginIntent.UpdateEmail("info@globaltech.com"))
-                                    viewModel.onIntent(LoginIntent.UpdatePassword("global123"))
-                                }
-                            )
-                            AutoFillButton(
-                                label = "Apex Electronics (Supplier)",
-                                email = "sales@apexelectronics.com",
-                                psw = "apex123",
-                                onClick = {
-                                    viewModel.onIntent(LoginIntent.UpdateEmail("sales@apexelectronics.com"))
-                                    viewModel.onIntent(LoginIntent.UpdatePassword("apex123"))
-                                }
-                            )
-                        }
-                        UserRole.ADMIN -> {
-                            AutoFillButton(
-                                label = "Chief Admin (Admin)",
-                                email = "admin@zeerostock.com",
-                                psw = "admin123",
-                                onClick = {
-                                    viewModel.onIntent(LoginIntent.UpdateEmail("admin@zeerostock.com"))
-                                    viewModel.onIntent(LoginIntent.UpdatePassword("admin123"))
-                                }
-                            )
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 package com.yeshuwahane.zeero.di
 
+import com.russhwolf.settings.Settings
 import com.yeshuwahane.zeero.data.repository.ProductRepositoryImpl
 import com.yeshuwahane.zeero.data.repository.UserRepositoryImpl
 import com.yeshuwahane.zeero.domain.repository.ProductRepository
@@ -17,13 +18,31 @@ import com.yeshuwahane.zeero.presentation.detail.ProductDetailViewModel
 import com.yeshuwahane.zeero.presentation.login.LoginViewModel
 import com.yeshuwahane.zeero.presentation.marketplace.MarketplaceViewModel
 import com.yeshuwahane.zeero.presentation.supplier.SupplierViewModel
+import com.yeshuwahane.zeero.data.db.DatabaseDriverFactory
+import com.yeshuwahane.zeero.data.db.ZeeroDb
+import com.yeshuwahane.zeero.data.db.ProductDao
+import com.yeshuwahane.zeero.data.db.ProductDaoImpl
+import com.yeshuwahane.zeero.data.db.RoomDatabase
 import org.koin.dsl.module
 
+import com.yeshuwahane.zeero.domain.usecase.RegisterUseCase
+import com.yeshuwahane.zeero.domain.usecase.UploadProductImageUseCase
+import com.yeshuwahane.zeero.domain.usecase.GetSettingsUserUseCase
+import com.yeshuwahane.zeero.domain.usecase.LogoutUseCase
+import com.yeshuwahane.zeero.domain.usecase.DeleteUserUseCase
+import com.yeshuwahane.zeero.domain.usecase.UpdateUserUseCase
 
 val commonModule = module {
+    // Settings & Database
+    single { Settings() }
+    single { DatabaseDriverFactory() }
+    single { ZeeroDb(get<DatabaseDriverFactory>().createDriver()) }
+    single { RoomDatabase(get()) }
+    single<ProductDao> { ProductDaoImpl(get()) }
+
     // Repositories
-    single<ProductRepository> { ProductRepositoryImpl() }
-    single<UserRepository> { UserRepositoryImpl() }
+    single<ProductRepository> { ProductRepositoryImpl(get(), get<ProductDao>(), get()) }
+    single<UserRepository> { UserRepositoryImpl(get(), get()) }
 
     // Use Cases
     single { GetProductsUseCase(get()) }
@@ -34,11 +53,17 @@ val commonModule = module {
     single { GetProductByIdUseCase(get()) }
     single { PlaceBidUseCase(get()) }
     single { AddProductUseCase(get()) }
+    single { RegisterUseCase(get()) }
+    single { UploadProductImageUseCase(get()) }
+    single { GetSettingsUserUseCase(get()) }
+    single { LogoutUseCase(get()) }
+    single { DeleteUserUseCase(get()) }
+    single { UpdateUserUseCase(get()) }
 
     // ViewModels
-    factory { LoginViewModel(get()) }
+    factory { LoginViewModel(get(), get()) }
     factory { MarketplaceViewModel(get()) }
     factory { ProductDetailViewModel(get(), get()) }
-    factory { SupplierViewModel(get()) }
-    factory { AdminViewModel(get(), get(), get(), get()) }
+    factory { SupplierViewModel(get(), get()) }
+    factory { AdminViewModel(get(), get(), get(), get(), get(), get(), get()) }
 }

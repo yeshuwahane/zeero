@@ -9,7 +9,8 @@ data class SupplierUiState(
     val durationHoursString: String = "24",
     val isLoading: Boolean = false,
     val showSuccess: Boolean = false,
-    val validationError: String = ""
+    val validationError: String = "",
+    val selectedImages: List<Pair<String, ByteArray>> = emptyList()
 )
 
 sealed interface SupplierIntent {
@@ -19,5 +20,8 @@ sealed interface SupplierIntent {
     data class UpdateCategory(val category: String) : SupplierIntent
     data class ToggleAuction(val isAuction: Boolean) : SupplierIntent
     data class UpdateDuration(val duration: String) : SupplierIntent
+    data class AddSelectedImages(val images: List<Pair<String, ByteArray>>) : SupplierIntent
+    data class RemoveSelectedImage(val index: Int) : SupplierIntent
     object SubmitUpload : SupplierIntent
+    object DismissDialog : SupplierIntent
 }

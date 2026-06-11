@@ -89,7 +89,8 @@ object MockData {
         User("sup_01", "Global Tech Supplies", "info@globaltech.com", "global123", UserRole.SUPPLIER),
         User("sup_02", "Apex Electronics", "sales@apexelectronics.com", "apex123", UserRole.SUPPLIER),
         User("sup_03", "Retro Thrift Co.", "retrothrift@gmail.com", "retro123", UserRole.SUPPLIER),
-        User("adm_01", "Chief Admin", "admin@zeerostock.com", "admin123", UserRole.ADMIN)
+        User("adm_01", "Chief Admin", "admin@zeerostock.com", "admin123", UserRole.ADMIN),
+        User("adm_02", "Operations Manager", "manager@zeerostock.com", "manager123", UserRole.ADMIN)
     )
 
     fun placeBid(productId: String, amount: Double, bidderName: String): Boolean {

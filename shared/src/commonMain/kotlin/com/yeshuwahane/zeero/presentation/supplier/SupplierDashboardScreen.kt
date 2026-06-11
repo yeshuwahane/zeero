@@ -23,8 +23,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.remember
+import com.yeshuwahane.zeero.presentation.components.ImagePickerButton
+import com.yeshuwahane.zeero.presentation.components.byteArrayToImageBitmap
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +59,10 @@ import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yeshuwahane.zeero.presentation.login.LoginScreen
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+import com.yeshuwahane.zeero.domain.usecase.LogoutUseCase
 
 class SupplierDashboardScreen : Screen {
 
@@ -59,6 +71,8 @@ class SupplierDashboardScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<SupplierViewModel>()
         val state by viewModel.state.collectAsState()
+        val logoutUseCase = koinInject<LogoutUseCase>()
+        val scope = rememberCoroutineScope()
 
         val categories = listOf("electronics", "audio", "fashion", "others")
 
@@ -77,7 +91,12 @@ class SupplierDashboardScreen : Screen {
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    IconButton(onClick = { navigator.replaceAll(LoginScreen()) }) {
+                    IconButton(onClick = {
+                        scope.launch {
+                            logoutUseCase()
+                            navigator.replaceAll(LoginScreen())
+                        }
+                    }) {
                         Icon(
                             Icons.Default.ExitToApp,
                             contentDescription = "Log Out / Switch Account"
@@ -141,6 +160,126 @@ class SupplierDashboardScreen : Screen {
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Product Gallery Images",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Add one or more images of the item.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val maxRemaining = 8 - state.selectedImages.size
+                            if (maxRemaining > 0) {
+                                ImagePickerButton(
+                                    onImagesSelected = { images ->
+                                        viewModel.onIntent(SupplierIntent.AddSelectedImages(images))
+                                    },
+                                    maxSelectionLimit = maxRemaining,
+                                    modifier = Modifier.height(44.dp)
+                                )
+                            } else {
+                                Button(
+                                    onClick = {},
+                                    enabled = false,
+                                    modifier = Modifier.height(44.dp)
+                                ) {
+                                    Text("Maximum 8 images added")
+                                }
+                            }
+                        }
+
+                        if (state.selectedImages.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            androidx.compose.foundation.lazy.LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(state.selectedImages.size) { index ->
+                                    val (name, bytes) = state.selectedImages[index]
+                                    Box(
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                                    ) {
+                                        val bitmap = remember(bytes) {
+                                            try {
+                                                byteArrayToImageBitmap(bytes)
+                                            } catch (e: Exception) {
+                                                null
+                                            }
+                                        }
+                                        if (bitmap != null) {
+                                            Image(
+                                                bitmap = bitmap,
+                                                contentDescription = name,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = name.takeLast(6),
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    textAlign = TextAlign.Center,
+                                                    modifier = Modifier.padding(4.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(2.dp)
+                                                .size(20.dp)
+                                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                                .background(Color(0xFFEF5350))
+                                                .clickable {
+                                                    viewModel.onIntent(SupplierIntent.RemoveSelectedImage(index))
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Clear,
+                                                contentDescription = "Remove",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -241,40 +380,36 @@ class SupplierDashboardScreen : Screen {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                AnimatedVisibility(visible = state.validationError.isNotEmpty()) {
-                    Text(
-                        text = state.validationError,
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                if (state.showSuccess) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { viewModel.onIntent(SupplierIntent.DismissDialog) },
+                        title = { Text("Success") },
+                        text = { Text("Listing uploaded and pending approval!") },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(
+                                onClick = { viewModel.onIntent(SupplierIntent.DismissDialog) }
+                            ) {
+                                Text("OK")
+                            }
+                        }
                     )
                 }
 
-                AnimatedVisibility(visible = state.showSuccess) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Uploaded",
-                            tint = Color(0xFF4CAF50),
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Listing uploaded and pending approval!",
-                            color = Color(0xFF4CAF50),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                if (state.validationError.isNotEmpty()) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { viewModel.onIntent(SupplierIntent.DismissDialog) },
+                        title = { Text("Error") },
+                        text = { Text(state.validationError) },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(
+                                onClick = { viewModel.onIntent(SupplierIntent.DismissDialog) }
+                            ) {
+                                Text("OK")
+                            }
+                        }
+                    )
                 }
 
                 Button(

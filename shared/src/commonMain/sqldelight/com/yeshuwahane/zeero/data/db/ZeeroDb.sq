@@ -1,0 +1,42 @@
+CREATE TABLE UserEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL
+);
+
+CREATE TABLE ProductEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    price REAL NOT NULL,
+    imageUrl TEXT NOT NULL,
+    supplierId TEXT NOT NULL,
+    isApproved INTEGER NOT NULL, -- 0 for false, 1 for true
+    currentHighestBid REAL NOT NULL,
+    highestBidderName TEXT NOT NULL,
+    auctionEndTimeMillis INTEGER NOT NULL
+);
+
+-- Queries for User
+insertUser:
+INSERT OR REPLACE INTO UserEntity(id, name, email, password, role)
+VALUES (?, ?, ?, ?, ?);
+
+getUser:
+SELECT * FROM UserEntity LIMIT 1;
+
+clearUsers:
+DELETE FROM UserEntity;
+
+-- Queries for Product
+insertProduct:
+INSERT OR REPLACE INTO ProductEntity(id, title, description, price, imageUrl, supplierId, isApproved, currentHighestBid, highestBidderName, auctionEndTimeMillis)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getAllProducts:
+SELECT * FROM ProductEntity;
+
+clearProducts:
+DELETE FROM ProductEntity;

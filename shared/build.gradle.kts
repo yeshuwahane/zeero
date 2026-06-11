@@ -41,12 +41,14 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.androidx.activity.compose)
 
             implementation(libs.ktor.client.android)
             implementation(libs.android.driver)
         }
         commonMain.dependencies {
             val voyagerVersion = "1.1.0-beta02"
+//            implementation(libs.multiplatform.settings.no.arg)
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -81,7 +83,7 @@ kotlin {
             implementation("cafe.adriel.voyager:voyager-transitions:${voyagerVersion}")
 // Koin integration
             implementation("cafe.adriel.voyager:voyager-koin:${voyagerVersion}")
-
+            implementation(libs.multiplatform.settings.no.arg)
         }
 
         iosMain.dependencies {
@@ -96,4 +98,12 @@ kotlin {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+sqldelight {
+    databases {
+        create("ZeeroDb") {
+            packageName.set("com.yeshuwahane.zeero.data.db")
+        }
+    }
 }
