@@ -9,7 +9,9 @@ data class AdminUiState(
     val selectedTabIndex: Int = 0,
     val pendingProductsResource: DataResource<List<Product>> = DataResource.initial(),
     val usersResource: DataResource<List<User>> = DataResource.initial(),
-    val currentAdminUser: User? = null
+    val currentAdminUser: User? = null,
+    val showSuccessMessage: String? = null,
+    val showErrorMessage: String? = null
 )
 
 sealed interface AdminIntent {
@@ -25,4 +27,5 @@ sealed interface AdminIntent {
         val role: UserRole
     ) : AdminIntent
     object LoadData : AdminIntent
+    object DismissDialog : AdminIntent
 }

@@ -21,4 +21,14 @@ interface ProductRepository {
     suspend fun approveProduct(productId: String): DataResource<String>
     suspend fun rejectProduct(productId: String): DataResource<String>
     suspend fun uploadProductImage(imageBytes: ByteArray): DataResource<String>
+    suspend fun updateProduct(
+        id: String,
+        title: String,
+        description: String,
+        price: Double,
+        category: String,
+        supplierId: String,
+        isAuction: Boolean,
+        durationHours: Int
+    ): DataResource<String>
 }

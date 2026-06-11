@@ -33,35 +33,58 @@ class AdminViewModel(
             is AdminIntent.SelectTab -> _state.update { it.copy(selectedTabIndex = intent.index) }
             is AdminIntent.ApproveProduct -> {
                 screenModelScope.launch {
-                    approveProductUseCase(intent.id)
+                    val result = approveProductUseCase(intent.id)
+                    if (result.isSuccess()) {
+                        _state.update { it.copy(showSuccessMessage = "Product approved successfully!") }
+                    } else {
+                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to approve product.") }
+                    }
                     loadData()
                 }
             }
             is AdminIntent.RejectProduct -> {
                 screenModelScope.launch {
-                    rejectProductUseCase(intent.id)
+                    val result = rejectProductUseCase(intent.id)
+                    if (result.isSuccess()) {
+                        _state.update { it.copy(showSuccessMessage = "Product rejected and removed successfully!") }
+                    } else {
+                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to reject product.") }
+                    }
                     loadData()
                 }
             }
             is AdminIntent.DeleteUser -> {
                 screenModelScope.launch {
-                    deleteUserUseCase(intent.id)
+                    val result = deleteUserUseCase(intent.id)
+                    if (result.isSuccess()) {
+                        _state.update { it.copy(showSuccessMessage = "User deleted successfully!") }
+                    } else {
+                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to delete user.") }
+                    }
                     loadData()
                 }
             }
             is AdminIntent.EditUser -> {
                 screenModelScope.launch {
-                    updateUserUseCase(
+                    val result = updateUserUseCase(
                         id = intent.id,
                         name = intent.name,
                         email = intent.email,
                         password = intent.password,
                         role = intent.role
                     )
+                    if (result.isSuccess()) {
+                        _state.update { it.copy(showSuccessMessage = "User updated successfully!") }
+                    } else {
+                        _state.update { it.copy(showErrorMessage = result.error?.message ?: "Failed to update user.") }
+                    }
                     loadData()
                 }
             }
             AdminIntent.LoadData -> loadData()
+            AdminIntent.DismissDialog -> {
+                _state.update { it.copy(showSuccessMessage = null, showErrorMessage = null) }
+            }
         }
     }
 

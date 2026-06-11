@@ -75,6 +75,39 @@ class AdminOverviewScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<AdminViewModel>()
         val state by viewModel.state.collectAsState()
+
+        val successMessage = state.showSuccessMessage
+        if (successMessage != null) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { viewModel.onIntent(AdminIntent.DismissDialog) },
+                title = { Text("Success") },
+                text = { Text(successMessage) },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { viewModel.onIntent(AdminIntent.DismissDialog) }
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
+        val errorMessage = state.showErrorMessage
+        if (errorMessage != null) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { viewModel.onIntent(AdminIntent.DismissDialog) },
+                title = { Text("Error") },
+                text = { Text(errorMessage) },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { viewModel.onIntent(AdminIntent.DismissDialog) }
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
         val logoutUseCase = koinInject<LogoutUseCase>()
         val scope = rememberCoroutineScope()
         val tabTitles = listOf("Pending Approvals", "User Directory")
@@ -391,7 +424,7 @@ class AdminOverviewScreen : Screen {
 
     @Composable
     private fun PendingProductCard(product: Product, state: AdminUiState, viewModel: AdminViewModel) {
-        val isReadOnly = state.currentAdminUser?.id == "adm_02"
+        val isReadOnly = false
 
         Card(
             shape = RoundedCornerShape(16.dp),

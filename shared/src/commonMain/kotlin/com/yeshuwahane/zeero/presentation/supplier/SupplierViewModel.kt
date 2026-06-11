@@ -2,8 +2,13 @@ package com.yeshuwahane.zeero.presentation.supplier
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.yeshuwahane.zeero.data.utils.DataResource
 import com.yeshuwahane.zeero.domain.usecase.AddProductUseCase
 import com.yeshuwahane.zeero.domain.usecase.UploadProductImageUseCase
+import com.yeshuwahane.zeero.domain.usecase.GetProductsUseCase
+import com.yeshuwahane.zeero.domain.usecase.GetSettingsUserUseCase
+import com.yeshuwahane.zeero.domain.usecase.RejectProductUseCase
+import com.yeshuwahane.zeero.domain.usecase.UpdateProductUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +17,11 @@ import kotlinx.coroutines.launch
 
 class SupplierViewModel(
     private val addProductUseCase: AddProductUseCase,
-    private val uploadProductImageUseCase: UploadProductImageUseCase
+    private val uploadProductImageUseCase: UploadProductImageUseCase,
+    private val getProductsUseCase: GetProductsUseCase,
+    private val getSettingsUserUseCase: GetSettingsUserUseCase,
+    private val rejectProductUseCase: RejectProductUseCase,
+    private val updateProductUseCase: UpdateProductUseCase
 ) : ScreenModel {
     private val _state = MutableStateFlow(SupplierUiState())
     val state: StateFlow<SupplierUiState> = _state.asStateFlow()
@@ -43,6 +52,72 @@ class SupplierViewModel(
             }
             SupplierIntent.SubmitUpload -> performUpload()
             SupplierIntent.DismissDialog -> _state.update { it.copy(showSuccess = false, validationError = "") }
+            is SupplierIntent.SelectTab -> _state.update { it.copy(selectedTabIndex = intent.index) }
+            is SupplierIntent.EditProduct -> {
+                val prod = intent.product
+                _state.update {
+                    it.copy(
+                        title = prod.title,
+                        description = prod.description,
+                        priceString = prod.price.toString(),
+                        selectedCategory = prod.imageUrl.split(",").firstOrNull() ?: "electronics",
+                        isAuction = prod.isAuction,
+                        durationHoursString = "24",
+                        editingProductId = prod.id,
+                        selectedTabIndex = 1, // Switch to form tab
+                        validationError = "",
+                        showSuccess = false
+                    )
+                }
+            }
+            is SupplierIntent.RemoveProduct -> {
+                screenModelScope.launch {
+                    val result = rejectProductUseCase(intent.productId)
+                    if (result.isSuccess()) {
+                        loadData()
+                    } else {
+                        _state.update { it.copy(validationError = result.error?.message ?: "Failed to remove product.") }
+                    }
+                }
+            }
+            SupplierIntent.CancelEdit -> {
+                _state.update {
+                    it.copy(
+                        title = "",
+                        description = "",
+                        priceString = "",
+                        selectedCategory = "electronics",
+                        isAuction = false,
+                        durationHoursString = "24",
+                        editingProductId = null,
+                        selectedTabIndex = 0, // Switch back to list tab
+                        selectedImages = emptyList(),
+                        validationError = "",
+                        showSuccess = false
+                    )
+                }
+            }
+            SupplierIntent.LoadData -> loadData()
+        }
+    }
+
+    private fun loadData() {
+        screenModelScope.launch {
+            val user = getSettingsUserUseCase()
+            val productsResult = getProductsUseCase(forceRefresh = true)
+            if (productsResult.isSuccess() && productsResult.data != null) {
+                val supplierProducts = if (user != null) {
+                    productsResult.data.filter { it.supplierId == user.id }
+                } else {
+                    productsResult.data.filter { it.supplierId == "sup_current" }
+                }
+                _state.update {
+                    it.copy(
+                        supplierProducts = supplierProducts,
+                        currentSupplier = user
+                    )
+                }
+            }
         }
     }
 
@@ -85,21 +160,52 @@ class SupplierViewModel(
                 }
                 
                 val finalImageUrl = imageList.joinToString(",")
+                val supplierId = currentState.currentSupplier?.id ?: "sup_current"
 
-                val addProductResult = addProductUseCase(
-                    title = currentState.title,
-                    description = currentState.description,
-                    price = price,
-                    category = finalImageUrl,
-                    supplierId = "sup_current",
-                    isAuction = currentState.isAuction,
-                    durationHours = duration ?: 24
-                )
-
-                if (addProductResult.isSuccess()) {
-                    _state.value = SupplierUiState(showSuccess = true) // Reset form with success marker
+                val isEditing = currentState.editingProductId != null
+                val result = if (isEditing) {
+                    updateProductUseCase(
+                        id = currentState.editingProductId!!,
+                        title = currentState.title,
+                        description = currentState.description,
+                        price = price,
+                        category = finalImageUrl,
+                        supplierId = supplierId,
+                        isAuction = currentState.isAuction,
+                        durationHours = duration ?: 24
+                    )
                 } else {
-                    val errorMsg = addProductResult.error?.message ?: "Failed to upload product."
+                    addProductUseCase(
+                        title = currentState.title,
+                        description = currentState.description,
+                        price = price,
+                        category = finalImageUrl,
+                        supplierId = supplierId,
+                        isAuction = currentState.isAuction,
+                        durationHours = duration ?: 24
+                    )
+                }
+
+                if (result.isSuccess()) {
+                    // Reset editing form fields, show success popup, switch back to listings
+                    _state.update {
+                        it.copy(
+                            title = "",
+                            description = "",
+                            priceString = "",
+                            selectedCategory = "electronics",
+                            isAuction = false,
+                            durationHoursString = "24",
+                            selectedImages = emptyList(),
+                            editingProductId = null,
+                            showSuccess = true,
+                            isLoading = false,
+                            selectedTabIndex = 0
+                        )
+                    }
+                    loadData()
+                } else {
+                    val errorMsg = result.error?.message ?: "Failed to save product listing."
                     _state.update { it.copy(isLoading = false, validationError = errorMsg) }
                 }
             }

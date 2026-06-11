@@ -31,6 +31,7 @@ import com.yeshuwahane.zeero.domain.usecase.GetSettingsUserUseCase
 import com.yeshuwahane.zeero.domain.usecase.LogoutUseCase
 import com.yeshuwahane.zeero.domain.usecase.DeleteUserUseCase
 import com.yeshuwahane.zeero.domain.usecase.UpdateUserUseCase
+import com.yeshuwahane.zeero.domain.usecase.UpdateProductUseCase
 
 val commonModule = module {
     // Settings & Database
@@ -59,11 +60,12 @@ val commonModule = module {
     single { LogoutUseCase(get()) }
     single { DeleteUserUseCase(get()) }
     single { UpdateUserUseCase(get()) }
+    single { UpdateProductUseCase(get()) }
 
     // ViewModels
     factory { LoginViewModel(get(), get()) }
     factory { MarketplaceViewModel(get()) }
-    factory { ProductDetailViewModel(get(), get()) }
-    factory { SupplierViewModel(get(), get()) }
+    factory { ProductDetailViewModel(get(), get(), get()) }
+    factory { SupplierViewModel(get(), get(), get(), get(), get(), get()) }
     factory { AdminViewModel(get(), get(), get(), get(), get(), get(), get()) }
 }

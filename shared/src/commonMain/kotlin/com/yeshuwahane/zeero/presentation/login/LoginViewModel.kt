@@ -32,6 +32,7 @@ class LoginViewModel(
             is LoginIntent.SelectRole -> _state.update { it.copy(selectedRole = intent.role, errorMessage = "") }
             is LoginIntent.SubmitLogin -> performLogin()
             is LoginIntent.SubmitRegister -> performRegister()
+            LoginIntent.DismissDialog -> _state.update { it.copy(errorMessage = "") }
         }
     }
 

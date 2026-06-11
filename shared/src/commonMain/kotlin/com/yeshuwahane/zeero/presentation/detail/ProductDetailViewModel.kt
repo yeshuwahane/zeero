@@ -5,6 +5,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.yeshuwahane.zeero.data.utils.DataResource
 import com.yeshuwahane.zeero.domain.usecase.GetProductByIdUseCase
 import com.yeshuwahane.zeero.domain.usecase.PlaceBidUseCase
+import com.yeshuwahane.zeero.domain.usecase.GetSettingsUserUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 class ProductDetailViewModel(
     private val getProductByIdUseCase: GetProductByIdUseCase,
-    private val placeBidUseCase: PlaceBidUseCase
+    private val placeBidUseCase: PlaceBidUseCase,
+    private val getSettingsUserUseCase: GetSettingsUserUseCase
 ) : ScreenModel {
     private val _state = MutableStateFlow(DetailUiState())
     val state: StateFlow<DetailUiState> = _state.asStateFlow()
@@ -22,6 +24,10 @@ class ProductDetailViewModel(
         when (intent) {
             is DetailIntent.LoadProduct -> {
                 screenModelScope.launch {
+                    val user = getSettingsUserUseCase()
+                    if (user != null) {
+                        _state.update { it.copy(bidderName = user.name) }
+                    }
                     val cached = getProductByIdUseCase.getCached(intent.id)
                     if (cached != null) {
                         _state.update { it.copy(productResource = DataResource.success(cached), validationError = "", showSuccess = false) }

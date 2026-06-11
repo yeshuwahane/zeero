@@ -219,6 +219,25 @@ class ProductRepositoryImpl(
         }
     }
 
+    override suspend fun updateProduct(
+        id: String,
+        title: String,
+        description: String,
+        price: Double,
+        category: String,
+        supplierId: String,
+        isAuction: Boolean,
+        durationHours: Int
+    ): DataResource<String> {
+        val resource = apiCall<String> {
+            httpClient.post("/api/products/$id/update") {
+                contentType(ContentType.Application.Json)
+                setBody(UploadProductRequestDto(title, description, price, category, supplierId, isAuction, durationHours))
+            }
+        }
+        return resource
+    }
+
     override suspend fun getCachedProducts(): List<Product> {
         return dao.getAll().map { it.toDomain() }
     }

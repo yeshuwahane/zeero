@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -106,6 +108,42 @@ class LoginScreen : Screen {
                 }
                 viewModel.resetEffect()
             }
+        }
+
+        val errorMessage = state.errorMessage
+        if (errorMessage.isNotEmpty()) {
+            AlertDialog(
+                onDismissRequest = { viewModel.onIntent(LoginIntent.DismissDialog) },
+                title = {
+                    Text(
+                        text = "Authentication Failed",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                },
+                text = {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { viewModel.onIntent(LoginIntent.DismissDialog) }
+                    ) {
+                        Text(
+                            text = "Dismiss",
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            )
         }
 
         Scaffold { paddingValues ->
@@ -255,19 +293,6 @@ class LoginScreen : Screen {
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                AnimatedVisibility(visible = state.errorMessage.isNotEmpty()) {
-                                    Text(
-                                        text = state.errorMessage,
-                                        color = MaterialTheme.colorScheme.error,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(vertical = 4.dp)
-                                    )
-                                }
 
                                 Spacer(modifier = Modifier.height(16.dp))
 

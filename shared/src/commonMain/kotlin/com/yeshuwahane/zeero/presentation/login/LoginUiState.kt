@@ -19,6 +19,7 @@ sealed interface LoginIntent {
     data class SelectRole(val role: UserRole) : LoginIntent
     object SubmitLogin : LoginIntent
     object SubmitRegister : LoginIntent
+    object DismissDialog : LoginIntent
 }
 
 sealed interface LoginEffect {

@@ -445,22 +445,7 @@ class ProductDetailScreen(private val productId: String) : Screen {
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            OutlinedTextField(
-                                value = state.bidderName,
-                                onValueChange = {
-                                    viewModel.onIntent(
-                                        DetailIntent.UpdateBidderName(
-                                            it
-                                        )
-                                    )
-                                },
-                                label = { Text("Your Name") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
 
-                            Spacer(modifier = Modifier.height(8.dp))
 
                             OutlinedTextField(
                                 value = state.bidAmount,
