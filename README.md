@@ -2,7 +2,7 @@
 
 ZeeroStock , Offline First Mobile App (Compose Multiplatform)
 
-![App Screenshots](app_screenshots.png)
+![App Screenshots](https://raw.githubusercontent.com/yeshuwahane/zeero/refs/heads/main/app_screenshots.png)
 
 ---
 
