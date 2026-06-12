@@ -108,12 +108,10 @@ class ProductDetailScreen(private val productId: String) : Screen {
         val productResource = state.productResource
         val isAuction = productResource.data?.isAuction ?: false
         if (isAuction) {
-            LaunchedEffect(Unit) {
-                if (!getPlatform().name.contains("iOS", ignoreCase = true)) {
-                    while (true) {
-                        viewModel.onIntent(DetailIntent.TickTimer(getCurrentTimeMillis()))
-                        delay(1000)
-                    }
+            LaunchedEffect(productId) {
+                while (true) {
+                    viewModel.onIntent(DetailIntent.TickTimer(getCurrentTimeMillis()))
+                    delay(1000)
                 }
             }
         }

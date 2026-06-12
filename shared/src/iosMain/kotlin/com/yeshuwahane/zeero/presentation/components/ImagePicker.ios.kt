@@ -83,20 +83,14 @@ actual fun ImagePickerButton(
                         val selectedImages = mutableListOf<Pair<String, ByteArray>>()
                         var remaining = results.size
 
-                        val uiImageClass = platform.objc.objc_getClass("UIImage") as platform.Foundation.NSItemProviderReadingProtocol
-
                         for (result in results) {
                             val itemProvider = result.itemProvider
-                            if (itemProvider.canLoadObjectOfClass(uiImageClass)) {
-                                itemProvider.loadObjectOfClass(uiImageClass) { imageObj, error ->
-                                    val uiImage = imageObj as? UIImage
-                                    if (uiImage != null) {
-                                        val jpegData = UIImageJPEGRepresentation(uiImage, 0.8)
-                                        if (jpegData != null) {
-                                            val bytes = jpegData.toByteArray()
-                                            val name = "ios_image_${getCurrentTimeMillis()}_${selectedImages.size}.jpg"
-                                            selectedImages.add(name to bytes)
-                                        }
+                            if (itemProvider.hasItemConformingToTypeIdentifier("public.image")) {
+                                itemProvider.loadDataRepresentationForTypeIdentifier("public.image") { nsData, error ->
+                                    if (nsData != null) {
+                                        val bytes = nsData.toByteArray()
+                                        val name = "ios_image_${getCurrentTimeMillis()}_${selectedImages.size}.jpg"
+                                        selectedImages.add(name to bytes)
                                     }
                                     
                                     remaining--
